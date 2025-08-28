@@ -195,59 +195,21 @@ function extractPlainText(payload) {
   return parts.join('\n').trim();
 }
 
-// async function fetchUnreadMessagesOnce(candidateEmail, label) {
-//   const q = gmailQuery(candidateEmail, label);
-//   const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 5 });
-//   const messages = list.data.messages || [];
-//   const results = [];
-//   for (const m of messages) {
-//     const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
-//     const env = full.data?.payload?.headers || [];
-//     const subj = env.find(h => h.name.toLowerCase() === 'subject')?.value || '';
-//     const from = env.find(h => h.name.toLowerCase() === 'from')?.value || '';
-//     const plain = extractPlainText(full.data?.payload) || full.data?.snippet || '';
-//     results.push({ id: m.id, subject: subj, from, body: plain });
-//   }
-//   return results;
-// }
-
 async function fetchUnreadMessagesOnce(candidateEmail, label) {
+  const q = gmailQuery(candidateEmail, label);
+  const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 5 });
+  const messages = list.data.messages || [];
   const results = [];
-  try {
-    const q = gmailQuery(candidateEmail, label);
-
-    let list;
-    try {
-      list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 5 });
-      console.log("list", list);
-    } catch (err) {
-      console.error("Error fetching messages list:", err);
-      return results; // exit early since we can't continue without message IDs
-    }
-
-    const messages = list.data.messages || [];
-
-    for (const m of messages) {
-      try {
-        const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
-
-        const env = full.data?.payload?.headers || [];
-        const subj = env.find(h => h.name.toLowerCase() === 'subject')?.value || '';
-        const from = env.find(h => h.name.toLowerCase() === 'from')?.value || '';
-        const plain = extractPlainText(full.data?.payload) || full.data?.snippet || '';
-
-        results.push({ id: m.id, subject: subj, from, body: plain });
-      } catch (err) {
-        console.error(`Error fetching full message for id ${m.id}:`, err);
-      }
-
-    }
-  } catch (err) {
-    console.error("Unexpected error in fetchUnreadMessagesOnce:", err);
+  for (const m of messages) {
+    const full = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
+    const env = full.data?.payload?.headers || [];
+    const subj = env.find(h => h.name.toLowerCase() === 'subject')?.value || '';
+    const from = env.find(h => h.name.toLowerCase() === 'from')?.value || '';
+    const plain = extractPlainText(full.data?.payload) || full.data?.snippet || '';
+    results.push({ id: m.id, subject: subj, from, body: plain });
   }
   return results;
 }
-
 
 async function runPollLoop(intervalMs, label) {
   if (polling) return;
